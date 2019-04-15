@@ -323,8 +323,8 @@ session is in the "transaction aborted" or "transaction committed"
 state, then any operation using the session (besides commitTransaction
 and abortTransaction) MUST reset the session state to "no transaction".
 
-Note that "error" is not a state, it represents throwing an error due to
-an invalid operation. When such errors are thrown the session state is
+Note that "error" is not a state, it represents raising an error due to
+an invalid operation. When such errors are raised the session state is
 unchanged.
 
 startTransaction
@@ -507,7 +507,7 @@ Drivers MAY implement an error label API similar to the following:
 Drivers MAY expose the list of all error labels for an exception object.
 
 Drivers MUST add the error label "TransientTransactionError" to network
-errors thrown in a transaction except for network errors thrown during
+errors raised in a transaction except for network errors raised during
 commitTransaction.
 
 Transactions Wire Protocol
@@ -840,7 +840,7 @@ client receives no server reply, the client adds the label.
 Retrying transactions that fail with TransientTransactionError
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If an exception with the "TransientTransactionError" label is thrown, an
+If an exception with the "TransientTransactionError" label is raised, an
 application can retry the entire transaction from the beginning with a
 reasonable expectation that it will succeed. For example:
 
@@ -897,7 +897,7 @@ fail with the same error.
 Retrying commitTransaction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-If an exception with this label is thrown, an application can safely
+If an exception with this label is raised, an application can safely
 call commitTransaction again. If this attempt succeeds it means the
 transaction has committed with the provided write concern. If this
 attempt fails it may also have the "UnknownTransactionCommitResult" error
@@ -984,7 +984,7 @@ other operations in the transaction, they don't know whether to retry
 the commit or the whole transaction on error. We want such code to raise
 an exception. One chance we have to do that is if a commit fails with a
 network error and enters the exception handling block, where
-abortTransaction throws "Cannot call abortTransaction after
+abortTransaction raises "Cannot call abortTransaction after
 commitTransaction".
 
 Drivers add the "TransientTransactionError" label to network errors
@@ -1144,8 +1144,8 @@ However, for consistency with other options-inheritance rules in our
 specifications, transactions MUST inherit the client's read preference.
 
 In MongoDB 4.0, the error "read preference in a transaction must be
-primary" is thrown whenever the application attempts a read operation in
-a transaction with a non-primary read preference. We considered throwing
+primary" is raised whenever the application attempts a read operation in
+a transaction with a non-primary read preference. We considered raising
 this error from startTransaction instead, to make the error more
 deterministic and reduce the performance burden of re-checking the
 TransactionOptions on each operation. However, this behavior will have
