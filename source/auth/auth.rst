@@ -750,7 +750,9 @@ The first message sent by drivers MUST contain a ``client nonce`` and ``gs2-cb-f
 and ``sts host``. Drivers MUST validate that the server nonce is exactly 64 bytes and the first 32 bytes are the same as the client nonce. 
 Drivers must also validate that the length of ``sts host`` value is greater than 0 and less than or equal to 255 bytes per 
 `RFC 1035 <https://tools.ietf.org/html/rfc1035>`_.  Drivers MUST reject ``sts host`` values with empty labels, e.g., "abc..def", and error on any 
-additional fields. Drivers MUST respond to the server's message with an ``authorization header`` and a ``date``.
+additional fields. Drivers MUST respond to the server's message with ``date``
+containing the current time and an ``authorization header``, produced
+following the process in `Authorization Header`_ below.
 
 As an example, given a client nonce value of "dzw1U2IwSEtgaWI0IUxZMVJqc2xuQzNCcUxBc05wZjI=", a MONGODB-AWS conversation decoded from
 BSON to JSON would appear as follows:
@@ -818,6 +820,9 @@ Client Second:
        "payload" : new BinData(0, "LQEAAAJhAAkBAABBV1M0LUhNQUMtU0hBMjU2IENyZWRlbnRpYWw9QUtJQUlDR1ZMS09LWlZZM1gzREEvMjAxOTExMTIvdXMtZWFzdC0xL3N0cy9hd3M0X3JlcXVlc3QsIFNpZ25lZEhlYWRlcnM9Y29udGVudC1sZW5ndGg7Y29udGVudC10eXBlO2hvc3Q7eC1hbXotZGF0ZTt4LW1vbmdvZGItZ3MyLWNiLWZsYWc7eC1tb25nb2RiLXNlcnZlci1ub25jZSwgU2lnbmF0dXJlPThhMTI0NGZjODYyZTI5YjZiZjc0OTFmMmYwNDE5NDY2ZGNjOTFmZWU1MTJhYTViM2ZmZjQ1NDY3NDEwMjJiMmUAAmQAEQAAADIwMTkxMTEyVDIxMDEyMloAAA==")
    }
 |
+
+Authorization Header
+````````````````````
 
 In response to the Server First message, drivers MUST send an ``authorization header``. Drivers MUST follow the
 `Signature Version 4 Signing Process <https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html>`_ to
