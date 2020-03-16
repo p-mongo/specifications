@@ -824,29 +824,19 @@ Client Second:
 Authorization Header
 ````````````````````
 
-In response to the Server First message, drivers MUST send an ``authorization header``. Drivers MUST follow the
-`Signature Version 4 Signing Process <https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html>`_ to
-calculate the signature for the ``authorization header``. The required and optional headers and their associated
-values drivers MUST use for the canonical request (see `Summary of Signing Steps
-<https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html>`_) are specified in the table
-below. The following pseudocode shows the construction of the Authorization header.
+In response to the Server First message, drivers MUST send an
+``authorization header``. This header will be sent by the server to STS
+as part of the request to validate the client's credentials. Drivers MUST
+follow the `Signature Version 4 Signing Process
+<https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html>`_ to
+calculate the canonical request to STS that will be composed by the server
+and subsequently calculate the ``authorization header`` for this request
+including the signature.
 
-.. code:: javascript
+Drivers MUST use the following table to obtain the fields comprising the
+`canonical request to STS
+<https://docs.aws.amazon.com/general/latest/gr/sigv4-create-canonical-request.html>`_:
 
-    Authorization: algorithm Credential=access key ID/credential scope, SignedHeaders=SignedHeaders, Signature=signature
-|
-
-The following example shows a finished Authorization header.
-
-.. code:: javascript
-
-    Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7    
-|
-
-The following diagram is a summary of the steps drivers MUST follow to calculate the signature.
-
-.. image:: includes/calculating_a_signature.png
-|
 ======================== ======================================================================================================
 Name                     Value       
 ======================== ======================================================================================================
@@ -872,6 +862,7 @@ Body                     Action=GetCallerIdentity&Version=2011-06-15\\n
         implicit region for ‘sts.amazonaws.com’. Drivers will need to derive the region to use from the endpoint. The region 
         is the second piece of a FQDN name. While all official AWS STS endpoints start with “sts.”, there are non-AWS hosted 
         endpoints and test endpoints that will not follow this rule.
+|
 
 ================= =========
 Host              Region
@@ -880,6 +871,23 @@ sts.amazonaws.com us-east-1
 first.second      second
 first             us-east-1
 ================= ========= 
+
+The following diagram is a summary of the steps to calculate the signature:
+
+.. image:: includes/calculating_a_signature.png
+
+The following pseudocode shows the construction of the Authorization header.
+
+.. code:: javascript
+
+    Authorization: algorithm Credential=access key ID/credential scope, SignedHeaders=SignedHeaders, Signature=signature
+|
+
+The following example shows a finished Authorization header.
+
+.. code:: javascript
+
+    Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7    
 
 `MongoCredential`_ Properties
 `````````````````````````````
