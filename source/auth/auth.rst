@@ -873,7 +873,6 @@ X-Amz-Date*              See `Amazon Documentation <https://docs.aws.amazon.com/
 X-Amz-Security-Token*    Optional, see `Amazon Documentation <https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_
 X-MongoDB-Server-Nonce*  Base64 string of server nonce
 X-MongoDB-GS2-CB-Flag*   ASCII lower-case character ‘n’ or ‘y’ or ‘p’
-X-MongoDB-Optional-Data* Optional data, base64 encoded representation of the optional object provided by the client
 Body                     Action=GetCallerIdentity&Version=2011-06-15\\n
 ======================== ======================================================================================================
 
