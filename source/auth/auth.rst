@@ -865,19 +865,22 @@ Name                     Value
 ======================== ======================================================================================================
 HTTP Request Method      POST 
 URI                      /
-Content-Type*            application/x-www-form-urlencoded
-Content-Length*          43
-Host*                    Host field from Server First Message
+Content-Type             application/x-www-form-urlencoded
+Content-Length           43
+Host                     Host field from Server First Message
 Region                   Derived from `sts host` - see `Region`_
-X-Amz-Date*              See `Amazon Documentation <https://docs.aws.amazon.com/general/latest/gr/sigv4_elements.html>`_
-X-Amz-Security-Token*    Optional, see `Amazon Documentation <https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_
-X-MongoDB-Server-Nonce*  Base64 string of server nonce
-X-MongoDB-GS2-CB-Flag*   ASCII lower-case character ‘n’ or ‘y’ or ‘p’
+X-Amz-Date               See `Amazon Documentation <https://docs.aws.amazon.com/general/latest/gr/sigv4_elements.html>`_
+X-Amz-Security-Token*    Security token, if temporary credentials are used
+X-MongoDB-Server-Nonce   Base64 string of server nonce
+X-MongoDB-GS2-CB-Flag    ASCII lower-case character ‘n’ or ‘y’ or ‘p’
 Body                     Action=GetCallerIdentity&Version=2011-06-15\\n
 ======================== ======================================================================================================
 
 .. note::
-        ``*``, Denotes a header that MUST be included in SignedHeaders, if present.
+
+    The X-Amz-Security-Token header MUST be included in the calculations
+    if and only if authentication is performed using temporary credentials.
+    All other fields MUST always be included in the calculations.
 
 The following diagram is a summary of the steps to calculate the signature:
 
