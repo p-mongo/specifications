@@ -821,6 +821,29 @@ Client Second:
    }
 |
 
+Region
+``````
+
+Drivers MUST derive the AWS region value from ``sts host`` value, for use in
+the calculation of `Authorization Header`_.
+
+The default region is ‘us-east-1’ since this is the implicit region for
+‘sts.amazonaws.com’. The region is the second piece of a FQDN name.
+While all official AWS STS endpoints start with “sts.”, there are
+non-AWS-hosted endpoints and test endpoints that will not follow this rule.
+
+The following table shows the regions that MUST be derived for several
+values of ``sts host``:
+
+================= =========
+`sts host`        Region
+================= =========
+sts.amazonaws.com us-east-1
+first.second      second
+first             us-east-1
+================= ========= 
+
+
 Authorization Header
 ````````````````````
 
@@ -845,7 +868,7 @@ URI                      /
 Content-Type*            application/x-www-form-urlencoded
 Content-Length*          43
 Host*                    Host field from Server First Message
-Region                   Derived from Host - see below
+Region                   Derived from `sts host` - see `Region`_
 X-Amz-Date*              See `Amazon Documentation <https://docs.aws.amazon.com/general/latest/gr/sigv4_elements.html>`_
 X-Amz-Security-Token*    Optional, see `Amazon Documentation <https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_
 X-MongoDB-Server-Nonce*  Base64 string of server nonce
@@ -856,21 +879,6 @@ Body                     Action=GetCallerIdentity&Version=2011-06-15\\n
 
 .. note::
         ``*``, Denotes a header that MUST be included in SignedHeaders, if present.
-
-.. note::
-        Region is not a header, but simply part of the authorization header. Region by default is ‘us-east-1’ since this is the 
-        implicit region for ‘sts.amazonaws.com’. Drivers will need to derive the region to use from the endpoint. The region 
-        is the second piece of a FQDN name. While all official AWS STS endpoints start with “sts.”, there are non-AWS hosted 
-        endpoints and test endpoints that will not follow this rule.
-|
-
-================= =========
-Host              Region
-================= =========
-sts.amazonaws.com us-east-1
-first.second      second
-first             us-east-1
-================= ========= 
 
 The following diagram is a summary of the steps to calculate the signature:
 
