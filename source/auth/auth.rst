@@ -866,14 +866,14 @@ Name                     Value
 HTTP Request Method      POST 
 URI                      /
 Content-Type             application/x-www-form-urlencoded
-Content-Length           43
+Content-Length           43 (the length of the string `Action=GetCallerIdentity&Version=2011-06-15`)
 Host                     Host field from Server First Message
 Region                   Derived from `sts host` - see `Region`_
 X-Amz-Date               See `Amazon Documentation <https://docs.aws.amazon.com/general/latest/gr/sigv4_elements.html>`_
 X-Amz-Security-Token*    Security token, if temporary credentials are used
 X-MongoDB-Server-Nonce   Base64 string of server nonce
 X-MongoDB-GS2-CB-Flag    ASCII lower-case character ‘n’ or ‘y’ or ‘p’
-Body                     Action=GetCallerIdentity&Version=2011-06-15\\n
+Body                     Action=GetCallerIdentity&Version=2011-06-15
 ======================== ======================================================================================================
 
 .. note::
