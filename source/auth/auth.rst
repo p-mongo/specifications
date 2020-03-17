@@ -867,7 +867,7 @@ HTTP Request Method      POST
 URI                      /
 Content-Type             application/x-www-form-urlencoded
 Content-Length           43 (the length of the string `Action=GetCallerIdentity&Version=2011-06-15`)
-Host                     Host field from Server First Message
+Host                     The value of `sts host`
 Region                   Derived from `sts host` - see `Region`_
 X-Amz-Date               See `Amazon Documentation <https://docs.aws.amazon.com/general/latest/gr/sigv4_elements.html>`_
 X-Amz-Security-Token*    Security token, if temporary credentials are used
