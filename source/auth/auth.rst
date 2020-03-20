@@ -744,16 +744,16 @@ The order in which Drivers MUST search for credentials is as follows:
 
 An example URI for authentication with MONGODB-AWS using AWS IAM credentials passed through the URI is as follows:
 
-.. code:: javascript
+.. code::
 
-   "mongodb://<access_key>:<secret_key>@mongodb.example.com/?authMechanism=MONGODB-AWS"
+   mongodb://<access_key>:<secret_key>@mongodb.example.com/?authMechanism=MONGODB-AWS
 |
 Users MAY have obtained temporary credentials through an `AssumeRole <https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html>`_ 
 request. If so, then in addition to a username and password, users MAY also provide an ``AWS_SESSION_TOKEN`` as a ``mechanism_property``. 
 
-.. code:: javascript
+.. code::
 
-   "mongodb://<access_key>:<secret_key>@mongodb.example.com/?authMechanism=MONGODB-AWS&authMechanismProperties=AWS_SESSION_TOKEN:<security_token>"
+   mongodb://<access_key>:<secret_key>@mongodb.example.com/?authMechanism=MONGODB-AWS&authMechanismProperties=AWS_SESSION_TOKEN:<security_token>
 |
 AWS Lambda runtimes set several `environment variables <https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime>`_ during initialization. To support AWS Lambda runtimes Drivers MUST check a subset of these variables, i.e., ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``, and ``AWS_SESSION_TOKEN``, for the access key ID, secret access key and session token, respectively if AWS credentials are not explicitly provided in the URI. The ``AWS_SESSION_TOKEN`` may or may not be set. However, if ``AWS_SESSION_TOKEN`` is set Drivers MUST use its value as the session token.
 
