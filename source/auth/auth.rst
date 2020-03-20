@@ -748,7 +748,7 @@ Conversation
 
 The first message sent by drivers MUST contain a ``client nonce`` and ``gs2-cb-flag``. In response, the server will send a ``server nonce``
 and ``sts host``. Drivers MUST validate that the server nonce is exactly 64 bytes and the first 32 bytes are the same as the client nonce. 
-Drivers must also validate that the length of ``sts host`` value is greater than 0 and less than or equal to 255 bytes per 
+Drivers MUST also validate that the length of ``sts host`` value is greater than 0 and less than or equal to 255 bytes per 
 `RFC 1035 <https://tools.ietf.org/html/rfc1035>`_.  Drivers MUST reject ``sts host`` values with empty labels, e.g., "abc..def", and error on any 
 additional fields. Drivers MUST respond to the server's message with ``date``
 containing ISO8601-formatted current time and an ``authorization header``, produced
