@@ -719,6 +719,89 @@ MONGODB-AWS authenticates using AWS IAM credentials (an access key ID and a secr
 `Assume Role <https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html>`_ request, 
 or temporary AWS IAM credentials assigned to an `EC2 instance <https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2.html>`_ or ECS task. Temporary credentials, in addition to an access key ID and a secret access key, includes a security (or session) token.
 
+Obtaining Credentials
+`````````````````````
+Drivers will need AWS IAM credentials (an access key, a secret access key and optionally a session token) to complete the steps in the `Signature Version 4 Signing Process 
+<https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_.  If a username and password are provided drivers 
+MUST use these for the AWS IAM access key and AWS IAM secret key, respectively. If, additionally, a session token is provided Drivers MUST use it as well. If a username is provided without a password (or vice-versa) or if *only* a session token is provided Drivers MUST raise an error. In other words, regardless of how Drivers obtain credentials the only valid combination of credentials is an access key ID and a secret access key or an access key ID, a secret access key and a session token.
+
+The order in which Drivers MUST search for credentials is:
+
+#. Credentials passed through the URI
+#. Environment variables
+#. ECS endpoint if and only if ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` is set.
+#. EC2 endpoint
+
+An example URI for authentication with MONGODB-AWS using AWS IAM credentials passed through the URI is as follows:
+
+.. code:: javascript
+
+   "mongodb://<access_key>:<secret_key>@mongodb.example.com/?authMechanism=MONGODB-AWS"
+|
+Users MAY have obtained temporary credentials through an `AssumeRole <https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html>`_ 
+request. If so, then in addition to a username and password, users MAY also provide an ``AWS_SESSION_TOKEN`` as a ``mechanism_property``. 
+
+.. code:: javascript
+
+   "mongodb://<access_key>:<secret_key>@mongodb.example.com/?authMechanism=MONGODB-AWS&authMechanismProperties=AWS_SESSION_TOKEN:<security_token>"
+|
+AWS Lambda runtimes set several `environment variables <https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime>`_ during initialization. To support AWS Lambda runtimes Drivers MUST check a subset of these variables, i.e., ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``, and ``AWS_SESSION_TOKEN``, for the access key ID, secret access key and session token, respectively if AWS credentials are not explicitly provided in the URI. The ``AWS_SESSION_TOKEN`` may or may not be set. However, if ``AWS_SESSION_TOKEN`` is set Drivers MUST use its value as the session token.
+
+If a username and password are not provided and the aforementioned enviornment variables are not set, drivers MUST query a link-local AWS address for temporary credentials.
+If temporary credentials cannot be obtained then drivers MUST fail authentication and raise an error. Drivers SHOULD
+enforce a 10 second read timeout while waiting for incoming content from both the ECS and EC2 endpoints. If the
+environment variable ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` is set then drivers MUST assume that it was set by an
+AWS ECS agent and use the URI ``http://169.254.170.2/$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` to obtain temporary
+credentials. Querying the URI will return the JSON response:
+
+.. code:: javascript
+
+   {
+    "AccessKeyId": <access_key>,
+    "Expiration": <date>,
+    "RoleArn": <task_role_arn>,
+    "SecretAccessKey": <secret_access_key>,
+    "Token": <security_token>
+   }
+
+If the environment variable ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` is not set drivers MUST assume we are on an
+EC2 instance and use the endpoint ``http://169.254.169.254/latest/meta-data/iam/security-credentials/<role-name>``
+whereas ``role-name`` can be obtained from querying the URI
+``http://169.254.169.254/latest/meta-data/iam/security-credentials/``. Drivers MUST use `IMDSv2, session-oriented
+requests
+<https://aws.amazon.com/blogs/security/defense-in-depth-open-firewalls-reverse-proxies-ssrf-vulnerabilities-ec2-instance-metadata-service/>`_
+to retrieve content from the EC2 instance's link-local address. This will require drivers to first retrieve a
+secret token to use as a password to make requests to IMDSv2 for credentials. On subsequent request, clients MUST set
+a header named `X-aws-ec2-metadata-token` with this token. For example, this curl recipe retrieves a session token
+that's valid for 30 seconds and then uses that token to access the EC2 instance's credentials:
+
+.. code:: shell-session
+
+    $ TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 30"`
+    $ ROLE_NAME=`curl http://169.254.169.254/latest/meta-data/iam/security-credentials/ -H "X-aws-ec2-metadata-token: $TOKEN"`
+    $ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/$ROLE_NAME -H "X-aws-ec2-metadata-token: $TOKEN"
+
+The JSON response will have the format:
+
+.. code:: javascript
+
+      {
+          "Code": "Success",
+          "LastUpdated" : <date>,
+          "Type": "AWS-HMAC",
+          "AccessKeyId" : <access_key>,
+          "SecretAccessKey": <secret_access_key>,
+          "Token" : <security_token>,
+          "Expiration": <date>
+      }
+
+See `IAM Roles for Tasks <https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html>`_. From either JSON response drivers 
+MUST obtain the ``access_key``, ``secret_key`` and ``security_token`` which will be used during the `Signature Version 4 Signing Process 
+<https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_.
+
+Conversation
+````````````
+
 MONGODB-AWS requires that a client create a randomly generated nonce. It is 
 imperative, for security's sake, that this be as secure and truly random as possible. 
 
@@ -742,9 +825,6 @@ Drivers MUST NOT advertise support for channel binding, as the server does
 not support it and legacy servers may fail authentication if drivers advertise
 support. The client-first-message MUST set the gs2-cb-flag to the integer representation 
 of the ASCII character ``n``, i.e., ``110``.
-
-Conversation
-````````````
 
 The first message sent by drivers MUST contain a ``client nonce`` and ``gs2-cb-flag``. In response, the server will send a ``server nonce``
 and ``sts host``. Drivers MUST validate that the server nonce is exactly 64 bytes and the first 32 bytes are the same as the client nonce. 
@@ -918,86 +998,6 @@ mechanism_properties
 	AWS_SESSION_TOKEN
 		Drivers MUST allow the user to specify an AWS session token for authentication with temporary credentials.
 
-
-Obtaining Credentials
-`````````````````````
-Drivers will need AWS IAM credentials (an access key, a secret access key and optionally a session token) to complete the steps in the `Signature Version 4 Signing Process 
-<https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_.  If a username and password are provided drivers 
-MUST use these for the AWS IAM access key and AWS IAM secret key, respectively. If, additionally, a session token is provided Drivers MUST use it as well. If a username is provided without a password (or vice-versa) or if *only* a session token is provided Drivers MUST raise an error. In other words, regardless of how Drivers obtain credentials the only valid combination of credentials is an access key ID and a secret access key or an access key ID, a secret access key and a session token.
-
-The order in which Drivers MUST search for credentials is:
-
-#. Credentials passed through the URI
-#. Environment variables
-#. ECS endpoint if and only if ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` is set.
-#. EC2 endpoint
-
-An example URI for authentication with MONGODB-AWS using AWS IAM credentials passed through the URI is as follows:
-
-.. code:: javascript
-
-   "mongodb://<access_key>:<secret_key>@mongodb.example.com/?authMechanism=MONGODB-AWS"
-|
-Users MAY have obtained temporary credentials through an `AssumeRole <https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html>`_ 
-request. If so, then in addition to a username and password, users MAY also provide an ``AWS_SESSION_TOKEN`` as a ``mechanism_property``. 
-
-.. code:: javascript
-
-   "mongodb://<access_key>:<secret_key>@mongodb.example.com/?authMechanism=MONGODB-AWS&authMechanismProperties=AWS_SESSION_TOKEN:<security_token>"
-|
-AWS Lambda runtimes set several `environment variables <https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime>`_ during initialization. To support AWS Lambda runtimes Drivers MUST check a subset of these variables, i.e., ``AWS_ACCESS_KEY_ID``, ``AWS_SECRET_ACCESS_KEY``, and ``AWS_SESSION_TOKEN``, for the access key ID, secret access key and session token, respectively if AWS credentials are not explicitly provided in the URI. The ``AWS_SESSION_TOKEN`` may or may not be set. However, if ``AWS_SESSION_TOKEN`` is set Drivers MUST use its value as the session token.
-
-If a username and password are not provided and the aforementioned enviornment variables are not set, drivers MUST query a link-local AWS address for temporary credentials.
-If temporary credentials cannot be obtained then drivers MUST fail authentication and raise an error. Drivers SHOULD
-enforce a 10 second read timeout while waiting for incoming content from both the ECS and EC2 endpoints. If the
-environment variable ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` is set then drivers MUST assume that it was set by an
-AWS ECS agent and use the URI ``http://169.254.170.2/$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` to obtain temporary
-credentials. Querying the URI will return the JSON response:
-
-.. code:: javascript
-
-   {
-    "AccessKeyId": <access_key>,
-    "Expiration": <date>,
-    "RoleArn": <task_role_arn>,
-    "SecretAccessKey": <secret_access_key>,
-    "Token": <security_token>
-   }
-
-If the environment variable ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` is not set drivers MUST assume we are on an
-EC2 instance and use the endpoint ``http://169.254.169.254/latest/meta-data/iam/security-credentials/<role-name>``
-whereas ``role-name`` can be obtained from querying the URI
-``http://169.254.169.254/latest/meta-data/iam/security-credentials/``. Drivers MUST use `IMDSv2, session-oriented
-requests
-<https://aws.amazon.com/blogs/security/defense-in-depth-open-firewalls-reverse-proxies-ssrf-vulnerabilities-ec2-instance-metadata-service/>`_
-to retrieve content from the EC2 instance's link-local address. This will require drivers to first retrieve a
-secret token to use as a password to make requests to IMDSv2 for credentials. On subsequent request, clients MUST set
-a header named `X-aws-ec2-metadata-token` with this token. For example, this curl recipe retrieves a session token
-that's valid for 30 seconds and then uses that token to access the EC2 instance's credentials:
-
-.. code:: shell-session
-
-    $ TOKEN=`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 30"`
-    $ ROLE_NAME=`curl http://169.254.169.254/latest/meta-data/iam/security-credentials/ -H "X-aws-ec2-metadata-token: $TOKEN"`
-    $ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/$ROLE_NAME -H "X-aws-ec2-metadata-token: $TOKEN"
-
-The JSON response will have the format:
-
-.. code:: javascript
-
-      {
-          "Code": "Success",
-          "LastUpdated" : <date>,
-          "Type": "AWS-HMAC",
-          "AccessKeyId" : <access_key>,
-          "SecretAccessKey": <secret_access_key>,
-          "Token" : <security_token>,
-          "Expiration": <date>
-      }
-
-See `IAM Roles for Tasks <https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html>`_. From either JSON response drivers 
-MUST obtain the ``access_key``, ``secret_key`` and ``security_token`` which will be used during the `Signature Version 4 Signing Process 
-<https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_.
 
 -------------------------
 Connection String Options
