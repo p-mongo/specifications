@@ -734,12 +734,13 @@ drivers obtain credentials, the only valid combination of credentials is
 an access key ID and a secret access key or an access key ID, a secret
 access key and a session token.
 
-The order in which Drivers MUST search for credentials is:
+The order in which Drivers MUST search for credentials is as follows:
 
-#. Credentials passed through the URI
-#. Environment variables
-#. ECS endpoint if and only if ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI`` is set.
-#. EC2 endpoint
+#. Credentials passed through the URI.
+#. Environment variables.
+#. ECS endpoint if and only if ``AWS_CONTAINER_CREDENTIALS_RELATIVE_URI``
+   environment variable is set.
+#. EC2 endpoint.
 
 An example URI for authentication with MONGODB-AWS using AWS IAM credentials passed through the URI is as follows:
 
