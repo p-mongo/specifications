@@ -828,7 +828,7 @@ s    server nonce         BinData Subtype 0 64 bytes total, 32 bytes from the cl
 h    sts host             string            FQDN of the STS service (obtained from the server)
 a    authorization header string            `Value of the Authorization header <#authorization-header>`_ for `AWS Signature Version 4 <https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_
 d    X-AMZ-Date           string            ISO8601-formatted current time in UTC, e.g. ``20200317T194745Z``. See `AWS Signature Version 4 <https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html?shortFooter=true>`_
-t    X-AMZ-Security-Token string            Optional AWS security token
+t    X-AMZ-Security-Token string            The AWS session token when using temporary credentials
 ==== ==================== ================= ============================================================================================================================================== 
 
 Drivers MUST NOT advertise support for channel binding, as the server does
